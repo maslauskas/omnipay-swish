@@ -26,7 +26,7 @@ class PurchaseResponse extends AbstractResponse
     {
         $location = $this->response->getHeader('location');
         if (!empty($location)) {
-            $urlParts = explode('/', $location);
+            $urlParts = explode('/', $location[0]);
 
             return end($urlParts);
         }

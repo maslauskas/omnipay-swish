@@ -2,7 +2,11 @@
 
 namespace Omnipay\Swish\Message;
 
+use Omnipay\Common\Exception\InvalidRequestException;
 use Omnipay\Common\Exception\InvalidResponseException;
+use Omnipay\Common\Http\ClientInterface;
+use Omnipay\Common\Message\ResponseInterface;
+use Symfony\Component\HttpFoundation\Request as HttpRequest;
 
 abstract class AbstractRequest extends \Omnipay\Common\Message\AbstractRequest
 {
@@ -10,6 +14,11 @@ abstract class AbstractRequest extends \Omnipay\Common\Message\AbstractRequest
 
     protected $liveEndpoint = 'https://cpc.getswish.net/swish-cpcapi/api';
     protected $testEndpoint = 'https://mss.cpc.getswish.net/swish-cpcapi/api';
+
+    public function __construct(ClientInterface $httpClient, HttpRequest $httpRequest)
+    {
+        parent::__construct($httpClient, $httpRequest);
+    }
 
     public function getCert()
     {
@@ -76,6 +85,9 @@ abstract class AbstractRequest extends \Omnipay\Common\Message\AbstractRequest
         return 'POST';
     }
 
+    /**
+     * @return string
+     */
     protected function getEndpoint()
     {
         $url = $this->getTestMode() ? $this->testEndpoint : $this->liveEndpoint;
@@ -83,6 +95,10 @@ abstract class AbstractRequest extends \Omnipay\Common\Message\AbstractRequest
         return $url.'/'.self::API_VERSION;
     }
 
+    /**
+     * @return array|mixed
+     * @throws InvalidRequestException
+     */
     public function getData()
     {
         $this->validate('notifyUrl', 'amount', 'currency', 'payeeAlias');
@@ -98,65 +114,31 @@ abstract class AbstractRequest extends \Omnipay\Common\Message\AbstractRequest
         return $data;
     }
 
+    /**
+     * @param mixed $data
+     *
+     * @return ResponseInterface|PurchaseResponse
+     */
     public function sendData($data)
     {
-        // don't throw exceptions for 4xx errors
-        $this->httpClient->getEventDispatcher()->addListener(
-            'request.error',
-            function ($event) {
-                if ($event['response']->isClientError()) {
-                    $event->stopPropagation();
-                }
-            }
-        );
+        $headers = [
+            'Content-type' => 'application/json',
+        ];
 
-        // Guzzle HTTP Client createRequest does funny things when a GET request
-        // has attached data, so don't send the data if the method is GET.
-        if ($this->getHttpMethod() == 'GET') {
-            $httpRequest = $this->httpClient->createRequest(
-                $this->getHttpMethod(),
-                $this->getEndpoint().'?'.http_build_query($data),
-                array(
-                    'Content-type' => 'application/json',
-                ),
-                null,
-                array(
-                    'cert'    => $this->getCert(),
-                    'ssl_key' => $this->getPrivateKey(),
-                    'verify'  => $this->getCaCert(),
-                )
-            );
-        } else {
-            $httpRequest = $this->httpClient->createRequest(
-                $this->getHttpMethod(),
-                $this->getEndpoint(),
-                array(
-                    'Content-type' => 'application/json',
-                ),
-                json_encode($data),
-                array(
-                    'cert'    => $this->getCert(),
-                    'ssl_key' => $this->getPrivateKey(),
-                    'verify'  => $this->getCaCert(),
-                )
-            );
-        }
+        $body = $data ? http_build_query($data, '', '&') : null;
+        $httpResponse = $this->httpClient->request($this->getHttpMethod(), $this->getEndpoint(), $headers, $body);
 
-        try {
-            $httpResponse = $httpRequest->send();
-
-            return $this->response = $this->createResponse($httpResponse);
-        } catch (\Exception $e) {
-            throw new InvalidResponseException(
-                'Error communicating with payment gateway: '.$e->getMessage(),
-                $e->getCode()
-            );
-        }
+        return $this->createResponse($httpResponse);
     }
 
-    protected function createResponse($response)
+    /**
+     * @param \Psr\Http\Message\ResponseInterface $response
+     *
+     * @return PurchaseResponse
+     */
+    protected function createResponse(\Psr\Http\Message\ResponseInterface $response)
     {
-        $data = $response->getBody(true);
+        $data = $response->getBody();
         $data = json_decode($data, true);
         $statusCode = $response->getStatusCode();
 
