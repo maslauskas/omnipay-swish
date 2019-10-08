@@ -3,113 +3,85 @@
 namespace Omnipay\Swish\Message;
 
 use Omnipay\Common\Exception\InvalidRequestException;
-use Omnipay\Common\Exception\InvalidResponseException;
-use Omnipay\Common\Http\ClientInterface;
+use Omnipay\Common\Message\AbstractRequest as BaseRequest;
 use Omnipay\Common\Message\ResponseInterface;
-use Symfony\Component\HttpFoundation\Request as HttpRequest;
 
-abstract class AbstractRequest extends \Omnipay\Common\Message\AbstractRequest
+abstract class AbstractRequest extends BaseRequest
 {
     const API_VERSION = 'v1';
 
-    protected $liveEndpoint = 'https://cpc.getswish.net/swish-cpcapi/api';
-    protected $testEndpoint = 'https://mss.cpc.getswish.net/swish-cpcapi/api';
+    const ENDPOINT_LIVE = 'https://cpc.getswish.net/swish-cpcapi/api';
+    const ENDPOINT_TEST = 'https://mss.cpc.getswish.net/swish-cpcapi/api';
 
-    public function __construct(ClientInterface $httpClient, HttpRequest $httpRequest)
-    {
-        parent::__construct($httpClient, $httpRequest);
-    }
-
-    public function getCert()
-    {
-        return $this->getParameter('cert');
-    }
-
-    public function setCert($value)
-    {
-        return $this->setParameter('cert', $value);
-    }
-
-    public function getPrivateKey()
-    {
-        return $this->getParameter('privateKey');
-    }
-
-    public function setPrivateKey($value)
-    {
-        return $this->setParameter('privateKey', $value);
-    }
-
-    public function getCaCert()
-    {
-        return $this->getParameter('caCert');
-    }
-
-    public function setCaCert($value)
-    {
-        return $this->setParameter('caCert', $value);
-    }
-
-    public function getPayeePaymentReference()
+    /**
+     * @return string|null
+     */
+    public function getPayeePaymentReference(): ?string
     {
         return $this->getParameter('payeePaymentReference');
     }
 
-    public function setPayeePaymentReference($value)
+    /**
+     * @param string $value
+     *
+     * @return AbstractRequest
+     */
+    public function setPayeePaymentReference(string $value)
     {
         return $this->setParameter('payeePaymentReference', $value);
     }
 
-    public function getPayerAlias()
+    /**
+     * @return string|null
+     */
+    public function getPayerAlias(): ?string
     {
         return $this->getParameter('payerAlias');
     }
 
-    public function setPayerAlias($value)
+    /**
+     * @param string $value
+     *
+     * @return AbstractRequest
+     */
+    public function setPayerAlias(string $value)
     {
         return $this->setParameter('payerAlias', $value);
     }
 
-    public function getPayeeAlias()
+    /**
+     * @return string|null
+     */
+    public function getPayeeAlias(): ?string
     {
         return $this->getParameter('payeeAlias');
     }
 
-    public function setPayeeAlias($value)
+    /**
+     * @param string $value
+     *
+     * @return AbstractRequest
+     */
+    public function setPayeeAlias(string $value)
     {
         return $this->setParameter('payeeAlias', $value);
     }
 
-    protected function getHttpMethod()
-    {
-        return 'POST';
-    }
-
     /**
-     * @return string
-     */
-    protected function getEndpoint()
-    {
-        $url = $this->getTestMode() ? $this->testEndpoint : $this->liveEndpoint;
-
-        return $url.'/'.self::API_VERSION;
-    }
-
-    /**
-     * @return array|mixed
+     * @return array
      * @throws InvalidRequestException
      */
     public function getData()
     {
         $this->validate('notifyUrl', 'amount', 'currency', 'payeeAlias');
 
-        $data = array(
+        $data = [
             'callbackUrl' => $this->getNotifyUrl(),
-            'amount'      => $this->getAmount(),
-            'currency'    => $this->getCurrency(),
-            'payerAlias'  => $this->getPayerAlias(),
-            'payeeAlias'  => $this->getPayeeAlias(),
-        );
+            'amount' => $this->getAmount(),
+            'currency' => $this->getCurrency(),
+            'payerAlias' => $this->getPayerAlias(),
+            'payeeAlias' => $this->getPayeeAlias(),
+        ];
 
         return $data;
     }
@@ -129,6 +101,24 @@ abstract class AbstractRequest extends \Omnipay\Common\Message\AbstractRequest
         $httpResponse = $this->httpClient->request($this->getHttpMethod(), $this->getEndpoint(), $headers, $body);
 
         return $this->createResponse($httpResponse);
+    }
+
+    /**
+     * @return string
+     */
+    protected function getHttpMethod()
+    {
+        return 'POST';
+    }
+
+    /**
+     * @return string
+     */
+    protected function getEndpoint()
+    {
+        $url = $this->getTestMode() ? self::ENDPOINT_TEST : self::ENDPOINT_LIVE;
+
+        return $url . '/' . self::API_VERSION;
     }
 
     /**

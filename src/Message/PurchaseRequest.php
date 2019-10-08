@@ -2,8 +2,14 @@
 
 namespace Omnipay\Swish\Message;
 
+use Omnipay\Common\Exception\InvalidRequestException;
+
 class PurchaseRequest extends AbstractRequest
 {
+    /**
+     * @return array
+     * @throws InvalidRequestException
+     */
     public function getData()
     {
         $data = parent::getData();
@@ -13,6 +19,9 @@ class PurchaseRequest extends AbstractRequest
         return $data;
     }
 
+    /**
+     * @return string
+     */
     protected function getEndpoint()
     {
         return parent::getEndpoint().'/paymentrequests';

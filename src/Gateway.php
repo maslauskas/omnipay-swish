@@ -3,6 +3,8 @@
 namespace Omnipay\Swish;
 
 use Omnipay\Common\AbstractGateway;
+use Omnipay\Common\Message\AbstractRequest;
+use Omnipay\Common\Message\RequestInterface;
 
 /**
  * Swish Class.
@@ -62,60 +64,53 @@ use Omnipay\Common\AbstractGateway;
  * @link https://www.getswish.se/handel/
  * @link https://www.openssl.org/docs/manmaster/apps/pkcs12.html
  * @see Omnipay\Swish\Message\AbstractRequest
+ *
+ * @method RequestInterface authorize(array $options = [])
+ * @method RequestInterface completeAuthorize(array $options = [])
+ * @method RequestInterface capture(array $options = [])
+ * @method RequestInterface completePurchase(array $options = [])
+ * @method RequestInterface refund(array $options = [])
+ * @method RequestInterface void(array $options = [])
+ * @method RequestInterface createCard(array $options = [])
+ * @method RequestInterface updateCard(array $options = [])
+ * @method RequestInterface deleteCard(array $options = [])
  */
 class Gateway extends AbstractGateway
 {
+    /**
+     * @return string
+     */
     public function getName()
     {
         return 'Swish';
     }
 
+    /**
+     * @return array
+     */
     public function getDefaultParameters()
     {
-        return array(
-            'cert'       => null,
-            'privateKey' => null,
-            'caCert'     => null,
-            'testMode'   => false,
-        );
+        return [
+            'testMode' => false,
+        ];
     }
 
-    public function getCert()
-    {
-        return $this->getParameter('cert');
-    }
-
-    public function setCert($value)
-    {
-        return $this->setParameter('cert', $value);
-    }
-
-    public function getPrivateKey()
-    {
-        return $this->getParameter('privateKey');
-    }
-
-    public function setPrivateKey($value)
-    {
-        return $this->setParameter('privateKey', $value);
-    }
-
-    public function getCaCert()
-    {
-        return $this->getParameter('caCert');
-    }
-
-    public function setCaCert($value)
-    {
-        return $this->setParameter('caCert', $value);
-    }
-
-    public function purchase(array $parameters = array())
+    /**
+     * @param array $parameters
+     *
+     * @return AbstractRequest|RequestInterface
+     */
+    public function purchase(array $parameters = [])
     {
         return $this->createRequest('\Omnipay\Swish\Message\PurchaseRequest', $parameters);
     }
 
-    public function fetchTransaction(array $parameters = array())
+    /**
+     * @param array $parameters
+     *
+     * @return AbstractRequest
+     */
+    public function fetchTransaction(array $parameters = [])
     {
         return $this->createRequest('\Omnipay\Swish\Message\FetchTransactionRequest', $parameters);
     }

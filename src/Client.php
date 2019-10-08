@@ -22,6 +22,14 @@ class Client implements ClientInterface
      */
     private $requestFactory;
 
+    /**
+     * Client constructor.
+     *
+     * @param string $rootCert
+     * @param string $clientCert
+     * @param string $privateKey
+     * @param RequestFactory $requestFactory
+     */
     public function __construct(string $rootCert, string $clientCert, string $privateKey, RequestFactory $requestFactory)
     {
         $this->httpClient = new \GuzzleHttp\Client([
