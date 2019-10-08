@@ -3,10 +3,15 @@
 namespace Omnipay\Swish;
 
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Handler\CurlHandler;
+use GuzzleHttp\HandlerStack;
+use HelmutSchneider\Swish\ValidationException;
+use Http\Client\Exception;
 use Http\Message\RequestFactory;
 use Omnipay\Common\Http\ClientInterface;
 use Omnipay\Common\Http\Exception\NetworkException;
 use Omnipay\Common\Http\Exception\RequestException;
+use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UriInterface;
@@ -32,12 +37,14 @@ class Client implements ClientInterface
      */
     public function __construct(string $rootCert, string $clientCert, string $privateKey, RequestFactory $requestFactory)
     {
-        $this->httpClient = new \GuzzleHttp\Client([
-            'cert' => $rootCert,
+        $config = [
+            'verify' => $rootCert,
+            'cert' => $clientCert,
             'ssl_key' => $privateKey,
-            'verify' => $clientCert,
-        ]);
+            'handler' => HandlerStack::create(new CurlHandler()),
+        ];
 
+        $this->httpClient = \Http\Adapter\Guzzle6\Client::createWithConfig($config);
         $this->requestFactory = $requestFactory;
     }
 
@@ -60,6 +67,32 @@ class Client implements ClientInterface
     {
         $request = $this->requestFactory->createRequest($method, $uri, $headers, $body, $protocolVersion);
 
-        return $this->httpClient->send($request);
+        return $this->sendRequest($request);
+    }
+
+    /**
+     * @param RequestInterface $request
+     *
+     * @return ResponseInterface
+     * @throws Exception
+     * @throws ValidationException
+     * @throws \Exception
+     */
+    private function sendRequest(RequestInterface $request)
+    {
+        try {
+            return $this->httpClient->sendRequest($request);
+        } catch (Exception\NetworkException $networkException) {
+            throw new NetworkException($networkException->getMessage(), $request, $networkException);
+        } catch (Exception\HttpException $e) {
+            switch ($e->getResponse()->getStatusCode()) {
+                case 403:
+                case 422:
+                    throw new ValidationException($e->getResponse());
+            }
+            throw $e;
+        } catch (\Exception $exception) {
+            throw $exception;
+        }
     }
 }

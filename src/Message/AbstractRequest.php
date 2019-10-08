@@ -95,9 +95,10 @@ abstract class AbstractRequest extends BaseRequest
     {
         $headers = [
             'Content-type' => 'application/json',
+            'Accept' => 'application/json',
         ];
 
-        $body = $data ? http_build_query($data, '', '&') : null;
+        $body = $data ? json_encode($data) : null;
         $httpResponse = $this->httpClient->request($this->getHttpMethod(), $this->getEndpoint(), $headers, $body);
 
         return $this->createResponse($httpResponse);
