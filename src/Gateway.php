@@ -91,8 +91,27 @@ class Gateway extends AbstractGateway
     public function getDefaultParameters()
     {
         return [
+            'payeeAlias' => null,
             'testMode' => false,
         ];
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getPayeeAlias(): ?string
+    {
+        return $this->parameters->get('payeeAlias');
+    }
+
+    /**
+     * @param string $value
+     * 
+     * @return Gateway
+     */
+    public function setPayeeAlias(string $value)
+    {
+        return $this->setParameter('payeeAlias', $value);
     }
 
     /**
