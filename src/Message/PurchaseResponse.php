@@ -60,6 +60,20 @@ class PurchaseResponse extends AbstractResponse
     /**
      * @return string|null
      */
+    public function getToken(): ?string
+    {
+        $token = $this->response->getHeader('PaymentRequestToken');
+
+        if (empty($token)) {
+            return null;
+        }
+
+        return $token[0];
+    }
+
+    /**
+     * @return string|null
+     */
     public function getMessage()
     {
         if (isset($this->data[0]['errorMessage'])) {
